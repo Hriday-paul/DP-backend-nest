@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Auth {
+  id                String   @id @default(uuid())
+  email             String
+  password          String
+  role              Role     @default(MEMBER)
+  isActive          Boolean  @default(true)
+  isDeleted         Boolean  @default(false)
+  isVerified        Boolean  @default(false)
+  
+  last_loginAt      DateTime @default(now())
+  passwordChangedAt DateTime @default(now())
+
+  // devices String[]
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auths")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  MANAGER
+}
+
+model OtpRequest {
+  id          String   @id @default(uuid())
+  code        String
+  createdAt   DateTime @default(now())
+  expiredAt   DateTime
+  isVerified  Boolean  @default(false)
+  type        Otp_type @default(REGISTER)
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  verifiedAt DateTime?
+
+  @@index([userId])
+  @@index([type])
+}
+
+enum Otp_type {
+  REGISTER
+  CHANGE_EMAIL
+  FORGOT_PASSWORD
+  MULTI_FACTOR_AUTH
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email      String   @unique
+  phone      String?
+  countries  String[]
+  address    String?
+  profession String?
+  company    String?
+
+  auth Auth?
+
+  notification Boolean @default(true)
+
+  fcmToken String?
+
+  picture ProfilePicture?
+
+  otpRequests OtpRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+
+  notifications Notification[]
+
+  @@index([email, isDeleted])
+  @@index([id, isDeleted])
+  @@index([id, email, isDeleted])
+  @@map("users")
+}
+
+model ProfilePicture {
+  id     String @id @default(uuid())
+  url    String
+  key    String
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([userId])
+  @@map("profile_pictures")
+}
+
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  receiverId    String
+  user      User     @relation(fields: [receiverId], references: [id], onDelete: Cascade)
+
+  isRead    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([receiverId])
+  @@map("notifications")
+}
