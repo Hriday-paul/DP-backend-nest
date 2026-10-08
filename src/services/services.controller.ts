@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -68,7 +69,7 @@ export class ServicesController {
       }
     },
   }))
-  async uploadFile(@UploadedFiles() files: Express.Multer.File[], @Body() payload: CreateServiceDto, @Req() req: Request) {
+  async uploadFile(@UploadedFiles() files: Express.Multer.File[], @Body() payload, @Req() req: Request) {
 
     if (files) {
       payload.images = files.map(file => ({
@@ -77,6 +78,9 @@ export class ServicesController {
       }));
 
     }
+
+    const variants = JSON.parse(payload?.variants ||'[]');
+    payload.variants = variants;
 
     await this.servicesService.createService(payload);
     return;
@@ -107,7 +111,10 @@ export class ServicesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateServiceDto: UpdateServiceDto,
   ) {
-    return await this.servicesService.updateService(id, updateServiceDto);
+    //feature will be coming soon,
+    throw new NotFoundException('This feature will be coming soon');
+    // return await this.servicesService.updateService(id, updateServiceDto);
+    return;
   }
 
   @Roles(Role.ADMIN)

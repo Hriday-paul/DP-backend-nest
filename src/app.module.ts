@@ -11,10 +11,11 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { NotificationModule } from './notification/notification.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ServicesModule } from './services/services.module';
+import { OrdersModule } from './orders/orders.module';
 
 
 @Module({
-  imports: [UserModule, AuthModule, ConfigModule.forRoot(), DashboardModule, NotificationModule, CategoriesModule, ServicesModule],
+  imports: [UserModule, AuthModule, ConfigModule.forRoot(), DashboardModule, NotificationModule, CategoriesModule, ServicesModule, OrdersModule],
   controllers: [AppController],
   providers: [AppService],
 })
@@ -36,6 +37,7 @@ export class AppModule implements NestModule {
         "notifications",
         "categories",
         "services",
+        "orders",
       )
   }
 }
