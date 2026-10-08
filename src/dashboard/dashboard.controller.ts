@@ -16,28 +16,25 @@ export class DashboardController {
     @HttpCode(200)
     @Get('stats')
     async getStats(@Req() req: Request) {
-        const user = req['user'];
-        return await this.dashboardService.statsData(user);
+        return await this.dashboardService.statsData();
     }
 
     @Roles("MEMBER")
     @UseGuards(PermissionGuard)
-    @ResponseMessage('Document upload chart retrieved successfully')
+    @ResponseMessage('Earning chart retrieved successfully')
     @HttpCode(200)
-    @Get('document-chart')
-    async documentUploadChart(@Query('JoinYear') JoinYear: string | undefined, @Req() req: Request) {
-        const user = req['user'];
-        return await this.dashboardService.documentUploadChart(JoinYear, user);
+    @Get('earning-chart')
+    async documentUploadChart(@Query('JoinYear') JoinYear: string | undefined) {
+        return await this.dashboardService.earningChart(JoinYear);
     }
 
     @Roles("MEMBER")
     @UseGuards(PermissionGuard)
-    @ResponseMessage('Recent uploaded documents retrieved successfully')
+    @ResponseMessage('User chart retrieved successfully')
     @HttpCode(200)
-    @Get('recent-documents')
-    async recentUploadedDocuments(@Req() req: Request) {
-        const user = req['user'];
-        return await this.dashboardService.recentUploadedDocuments(user);
+    @Get('user-chart')
+    async recentUploadedDocuments(@Query('JoinYear') JoinYear: string | undefined) {
+        return await this.dashboardService.userChart(JoinYear);
     }
 
 }

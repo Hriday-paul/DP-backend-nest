@@ -84,6 +84,8 @@ model User {
   isDeleted Boolean  @default(false)
 
   notifications Notification[]
+  orders Order[]
+  payments Payment[]
 
   @@index([email, isDeleted])
   @@index([id, isDeleted])
@@ -105,6 +107,91 @@ model ProfilePicture {
   @@map("profile_pictures")
 }
 
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  description String?
+  services  Serivce[]
+
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
+  @@index([isDeleted])
+}
+
+model Variant {
+  id        String   @id @default(uuid())
+  timeLine  String
+  base_price Float
+  discount  Float
+  final_price Float
+  badges VariantBadge[]
+
+  note      String?
+
+  isDeleted Boolean @default(false)
+
+  serviceId String
+  service   Serivce  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  accountType AccountType @default(PERSONAL)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("variants")
+  @@index([isDeleted, serviceId])
+}
+
+enum VariantBadge {
+  BEST_VALUE
+  MOST_POPULAR
+  BEST_SELLER
+  BEST_DEAL
+  PREMIUM
+  RECOMMENDED
+  NEW
+  LIMITED_STOCK
+  TRENDING
+  EXCLUSIVE
+  SPECIAL_OFFER
+  TOP_PICK
+}
+
+enum AccountType {
+  SHARED
+  PERSONAL
+}
+
+model Serivce {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  description String
+  variants  Variant[]
+  note      String?
+
+  minPrice  Float
+  maxPrice  Float
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  isDeleted Boolean @default(false)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("services")
+  @@index([isDeleted, categoryId])
+}
 
 model Notification {
   id        String   @id @default(uuid())
@@ -120,4 +207,62 @@ model Notification {
 
   @@index([receiverId])
   @@map("notifications")
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  serviceId String
+  service   Serivce  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  variantId String
+  variant   Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  status    OrderStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([serviceId])
+  @@index([variantId])
+  @@index([paymentId])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELED
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  amount    Float
+  status    PaymentStatus @default(PENDING)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orders   Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lastActionAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+  REFUNDED
 }

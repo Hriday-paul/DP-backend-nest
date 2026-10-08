@@ -9,10 +9,11 @@ import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { NotificationModule } from './notification/notification.module';
+import { CategoriesModule } from './categories/categories.module';
 
 
 @Module({
-  imports: [UserModule, AuthModule, ConfigModule.forRoot(), DashboardModule, NotificationModule],
+  imports: [UserModule, AuthModule, ConfigModule.forRoot(), DashboardModule, NotificationModule, CategoriesModule],
   controllers: [AppController],
   providers: [AppService],
 })
