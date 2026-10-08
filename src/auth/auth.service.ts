@@ -20,6 +20,11 @@ export class AuthService {
         const user = await this.prismaService.user.findUnique({
             where: {
                 email: payload.email,
+                auth: {
+                    role : {
+                        not: Role.ADMIN
+                    }
+                }
             },
             include: {
                 auth: true,
@@ -28,6 +33,67 @@ export class AuthService {
 
         if (!user) {
             throw new NotFoundException('User does not exist');
+        }
+
+        if (!user?.auth?.isActive) {
+            throw new ForbiddenException('Your account is not active');
+        }
+
+        if (user?.auth?.isDeleted) {
+            throw new GoneException('Your account is deleted');
+        }
+
+        if (!user?.auth?.isVerified) {
+            throw new ForbiddenException('Your account is not verified');
+        }
+
+        // Handle verify password
+        const passwordMatched = await bcrypt.compare(payload?.password, user?.auth?.password);
+
+        if (!passwordMatched) {
+            throw new ForbiddenException('Please check your credentials and try again');
+        }
+
+        //update last login time
+        await this.prismaService.auth.update({
+            where: { userId: user?.id },
+            data: { last_loginAt: new Date() },
+        })
+
+        // Generate JWT access token
+        const jwtPayload: { userId: string; role: Role } = {
+            userId: user?.id,
+            role: user?.auth?.role
+        };
+
+
+        const accessToken = await this.jwtService.signAsync(jwtPayload, { expiresIn: config?.accessExpiresIn as SignOptions['expiresIn'], secret: process.env.JWT_ACCESS_SECRET });
+
+        const refreshToken = await this.jwtService.signAsync(jwtPayload, { expiresIn: config?.refreshExpiresIn as SignOptions['expiresIn'], secret: process.env.JWT_REFRESH_SECRET });
+
+        return {
+            accessToken,
+            refreshToken,
+            user
+        };
+
+    }
+
+    async adminLogin(payload: LoginDto) {
+        const user = await this.prismaService.user.findUnique({
+            where: {
+                email: payload.email,
+                auth: {
+                    role : Role.ADMIN
+                }
+            },
+            include: {
+                auth: true,
+            }
+        });
+
+        if (!user) {
+            throw new NotFoundException('Account does not exist');
         }
 
         if (!user?.auth?.isActive) {

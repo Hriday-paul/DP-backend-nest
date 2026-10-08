@@ -176,6 +176,8 @@ model Serivce {
   variants  Variant[]
   note      String?
 
+  images    ServiceImage[]
+
   minPrice  Float
   maxPrice  Float
 
@@ -191,6 +193,20 @@ model Serivce {
 
   @@map("services")
   @@index([isDeleted, categoryId])
+}
+
+model ServiceImage {
+  id        String   @id @default(uuid())
+  url       String
+  key       String
+  serviceId String
+  service   Serivce  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceId])
+  @@map("service_images")
 }
 
 model Notification {
@@ -223,6 +239,11 @@ model Order {
   paymentId String
   payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
+  customerName String
+  customerEmail String
+  customerWhatsapp String
+  customerNote String?
+
   status    OrderStatus @default(PENDING)
 
   createdAt DateTime @default(now())
@@ -248,6 +269,10 @@ model Payment {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  paymentMethod PaymentMethod @default(BKASH)
+  accountNumber String
+  transactionId String
+
   orders   Order[]
 
   createdAt DateTime @default(now())
@@ -257,6 +282,14 @@ model Payment {
 
   @@index([userId])
   @@map("payments")
+}
+
+enum PaymentMethod {
+  BKASH
+  NAGAD
+  ROCKET
+  CARD
+  CASH
 }
 
 enum PaymentStatus {

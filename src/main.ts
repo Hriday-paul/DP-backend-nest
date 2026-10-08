@@ -11,15 +11,15 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  // app.enableCors({
-  //   origin: '*',
-  //   credentials: false,
-  // });
-
   app.enableCors({
-    origin: ["https://docuvault.info", "https://www.docuvault.info"],
-    credentials: true,
+    origin: '*',
+    credentials: false,
   });
+
+  // app.enableCors({
+  //   origin: ["https://docuvault.info", "https://www.docuvault.info"],
+  //   credentials: true,
+  // });
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,

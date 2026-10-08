@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
@@ -9,10 +8,19 @@ export class DashboardService {
 
     async statsData() {
 
-        const totalUsers = await this.prismaService.user.count();
+        const totalUsers = await this.prismaService.user.count({
+            where: {
+                auth: {
+                    role: {
+                        not: "ADMIN"
+                    },
+                    isDeleted: false
+                }
+            }
+        });
 
         const totalEarnings = await this.prismaService.payment.aggregate({
-            _sum : {
+            _sum: {
                 amount: true
             },
             where: {
@@ -26,7 +34,7 @@ export class DashboardService {
         };
     }
 
-    async earningChart (JoinYear: string | undefined) {
+    async earningChart(JoinYear: string | undefined) {
 
         let year = new Date().getFullYear();
         if (JoinYear) {
@@ -39,7 +47,7 @@ export class DashboardService {
                     gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
                     lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
                 },
-                status : "PAID"
+                status: "PAID"
             },
             _sum: {
                 amount: true,

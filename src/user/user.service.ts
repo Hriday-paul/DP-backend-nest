@@ -10,8 +10,8 @@ export class UserService {
 
     constructor(private readonly prismaService: PrismaService) { }
 
-    async addNewuser(payload: CreateUserDto, req_user: { id: string, role: string }) {
-        const { phone, password, name, email, address, role, departments } = payload
+    async addNewuser(payload: CreateUserDto) {
+        const { phone, password, name, email, address } = payload
 
         let isExist = await this.prismaService.user.findFirst({ where: { email }, include: { auth: true } });
 
@@ -29,14 +29,10 @@ export class UserService {
             where: { email },
             update: {
                 name, email,
-                departmentGroups: {
-                    deleteMany: {},
-                    create: departments ? departments?.map((departmentId) => ({ departmentId })) : [],
-                },
                 auth: {
                     upsert: {
-                        update: { password: hashedPassword, role, isVerified: true },
-                        create: { password: hashedPassword, email, role, isVerified: true }
+                        update: { password: hashedPassword, role: "MEMBER"},
+                        create: { password: hashedPassword, email, role: "MEMBER"}
                     }
                 }
             },
@@ -45,15 +41,11 @@ export class UserService {
                 name,
                 email,
                 address,
-                departmentGroups: {
-                    create: departments ? departments?.map((departmentId) => ({ departmentId })) : [],
-                },
                 auth: {
                     create: {
                         email,
                         password: hashedPassword,
-                        role,
-                        isVerified: true
+                        role: "MEMBER",
                     }
                 }
             },
@@ -67,19 +59,6 @@ export class UserService {
             }
         });
 
-        //create a notification for the new user
-        await this.prismaService.notification.create({
-            data: {
-                title: 'New User Invitation',
-                message: `A new user has been invited: ${user?.name}`,
-                receiverId: req_user?.id,
-            },
-        });
-
-        if (!user) {
-            throw new InternalServerErrorException('User creation failed');
-        }
-
         return user;
     }
 
@@ -92,7 +71,7 @@ export class UserService {
 
         const { limit, skip, sortBy, sortOrder, page } = paginationHelper.calculatePagination(options);
 
-        const { searchTerm, role } = query;
+        const { searchTerm } = query;
 
         if (searchTerm) {
             AndConditions.push({
@@ -119,14 +98,6 @@ export class UserService {
             });
         }
 
-        if (role) {
-            AndConditions.push({
-                auth: {
-                    role
-                }
-            });
-        }
-
         const whereConditions: Prisma.UserWhereInput = AndConditions.length > 0 ? { AND: AndConditions } : {};
 
         const result = await this.prismaService.user.findMany({
@@ -137,13 +108,8 @@ export class UserService {
                 [sortBy]: sortOrder,
             },
             include: {
-                auth: { select: { isActive: true } },
-                picture: true,
-                departmentGroups: {
-                    include: {
-                        department: true
-                    }
-                }
+                auth: { select: { isActive: true, isVerified: true } },
+                picture: true
             },
         })
 
@@ -211,6 +177,21 @@ export class UserService {
         })
 
         return result
+    }
+
+    async blockUnblockUser(userID: string, payload: { isActive: boolean }) {
+        const user = await this.prismaService.user.findUnique({ where: { id: userID }, include: { auth: true } });
+
+        if (!user) {
+            throw new NotFoundException("User does not exist");
+        }
+
+        await this.prismaService.auth.update({
+            where: { id: user.auth?.id },
+            data: { isActive: payload.isActive }
+        });
+
+        return;
     }
 
 }
