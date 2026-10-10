@@ -28,7 +28,7 @@ export class UserService {
         const user = await this.prismaService.user.upsert({
             where: { email },
             update: {
-                name, email,
+                name, email, phone, address,
                 auth: {
                     upsert: {
                         update: { password: hashedPassword, role: "MEMBER"},

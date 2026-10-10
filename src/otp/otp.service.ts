@@ -64,7 +64,7 @@ export class OtpService {
             });
         }
 
-        return auth_token;
+        return {token : auth_token};
     };
 
     async verifyOtp(token: string, otp: string) {

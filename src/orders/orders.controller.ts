@@ -55,10 +55,11 @@ export class OrdersController {
   @ResponseMessage('My Orders retrieved successfully')
   @HttpCode(200)
   @Get("my-orders")
-  async getMyOrders(@Query() query: Record<string, unknown>, req: Request) {
+  async getMyOrders(@Query() query: Record<string, unknown>, @Req() req: Request) {
     const filtered_query = pick(query, ["searchTerm", "status", "paymentStatus"]);
     const options = pick(query, PaginateOptions);
-    const userId = req['user'].id;
+    const userId = req['user']?.id;
+   
     return await this.ordersService.myorders(userId, filtered_query, options);
   }
 

@@ -48,8 +48,8 @@ export class AuthMiddleware implements NestMiddleware {
         }
 
         const req_user = {
-            id: userId,
-            role: role,
+            id: user?.id,
+            role: user?.auth?.role,
             email: user?.email,
         }
 
