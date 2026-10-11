@@ -11,7 +11,7 @@ async function main() {
             email : "admin@gmail.com",
             auth : {
                 create : {
-                    password : "$2b$12$r/Yridfc5rDxA/XC4U96Lu59vEkAKM6h6Ef7v5Va1xKZAJLttbS5y",
+                    password : "$2b$15$eLr1wzpmpBCMxBhRGJfLMe1ZFsmP7jt/PrwbRDxRryH63CQUPf3RK",
                     email : "admin@gmail.com",
                     isVerified : true,
                     role : "ADMIN"

@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: docuvault-container
+    container_name: backend-container
     restart: unless-stopped
 
     ports:
@@ -46,6 +46,26 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-db
+    restart: unless-stopped
+
+    volumes:
+      - redis_data:/data
+
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed"
+    restart: "no"
 
 volumes:
   postgres_data:
