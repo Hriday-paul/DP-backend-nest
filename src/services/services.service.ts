@@ -27,7 +27,7 @@ export class ServicesService {
 
   async createService(payload: CreateServiceDto) {
 
-    const {variants, images, categoryId, title, description, note} = payload;
+    const { variants, images, categoryId, title, description, note } = payload;
 
     // 1. Verify category exists and is active
     const category = await this.prismaService.category.findFirst({
@@ -206,7 +206,7 @@ export class ServicesService {
     });
 
     if (!service) {
-      throw new NotFoundException('Service not available');
+      return null;
     }
 
     return service;
@@ -340,4 +340,60 @@ export class ServicesService {
 
     return;
   }
+
+  async gerSimilarServices(slug: string) {
+    const service = await this.prismaService.serivce.findFirst({
+      where: {
+        slug,
+        isDeleted: false,
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    if (!service) {
+      return [];
+    }
+
+    const similarServices = await this.prismaService.serivce.findMany({
+      where: {
+        id: { not: service.id },
+        categoryId: service.categoryId,
+        isDeleted: false,
+      },
+      take: 4,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        images: {
+          select: {
+            id: true,
+            url: true,
+            key: true,
+          },
+        },
+        variants: {
+          where: { isDeleted: false },
+          select: {
+            id: true,
+            timeLine: true,
+            base_price: true,
+            discount: true,
+            final_price: true,
+            badges: true,
+            note: true,
+            accountType: true,
+          },
+        },
+      },
+    });
+
+    return similarServices;
+  }
+
 }

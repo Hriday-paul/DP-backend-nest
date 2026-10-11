@@ -55,10 +55,10 @@ export class ServicesController {
         cb(null, `${`${Math.floor(100000 + Math.random() * 900000)}${Date.now()}`}-${file?.originalname}`);
       },
     }),
-    limits: { 
+    limits: {
       fileSize: 1024 * 1024 * 5,  // 5MB
       files: 5  // Maximum number of files
-     },
+    },
     fileFilter: (_, file, cb) => {
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 
@@ -79,7 +79,7 @@ export class ServicesController {
 
     }
 
-    const variants = JSON.parse(payload?.variants ||'[]');
+    const variants = JSON.parse(payload?.variants || '[]');
     payload.variants = variants;
 
     await this.servicesService.createService(payload);
@@ -95,11 +95,18 @@ export class ServicesController {
     return await this.servicesService.getAllServices(filtered_query, options);
   }
 
+  @ResponseMessage('Similar services retrieved successfully')
+  @HttpCode(200)
+  @Get('similar/:slug')
+  async getSimilarServices(@Param('slug') slug: string) {
+    return await this.servicesService.gerSimilarServices(slug);
+  }
+
   @ResponseMessage('Service retrieved successfully')
   @HttpCode(200)
-  @Get(':id')
-  async getServiceById(@Param('id') id: string) {
-    return await this.servicesService.getServiceBySlug(id);
+  @Get(':slug')
+  async getServiceById(@Param('slug') slug: string) {
+    return await this.servicesService.getServiceBySlug(slug);
   }
 
   @Roles(Role.ADMIN)
