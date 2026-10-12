@@ -1,95 +1,160 @@
 <!doctype html>
-<html>
-  <head>
-    <style>
-      /* Global Styles */
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f5f5f5;
-        margin: 0;
-        padding: 0;
-      }
-      .container {
-        width: 100%;
-        padding: 20px;
-        background-color: #ffffff;
-      }
-      .email-body {
-        max-width: 600px;
-        margin: 0 auto;
-        background-color: #ffffff;
-        border: 1px solid #e5e5e5;
-        padding: 30px;
-        border-radius: 8px;
-      }
-      .logo {
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      .logo img {
-        width: 120px;
-      }
-      .otp-message {
-        font-size: 18px;
-        color: #333333;
-        margin-bottom: 20px;
-        text-align: center;
-      }
-      .otp-code {
-        display: inline-block;
-        font-size: 24px;
-        font-weight: bold;
-        color: #ffffff;
-        background-color: #1B8BCC;
-        padding: 10px 20px;
-        border-radius: 5px;
-      }
-      .cta {
-        text-align: center;
-        margin-top: 30px;
-      }
-      .footer {
-        font-size: 12px;
-        color: #999999;
-        text-align: center;
-        margin-top: 30px;
-      }
-      .footer a {
-        color: #2563eb;
-        text-decoration: none;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="email-body">
-        <div class="logo">
-          <img
-            src="https://asifzonebd.com/logo.png"
-            alt="app Logo"
-          />
-        </div>
-        <div class="otp-message">
-          <p>Hello {{email}},</p>
-          <p>
-            We received a request to reset the password for your account. Your One-Time Password (OTP) to reset your password is:
-          </p>
-          <p class="otp-code">{{otp}}</p>
-          <p>
-            This code is valid for 10 minutes. Please do not share this code with anyone.
-          </p>
-        </div>
-        <div class="cta">
-          <p>If you didn't request a password reset, please ignore this email.</p>
-          <p>Thank you for using our application.</p>
-        </div>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reset your password</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .wrapper {
+      width: 100%;
+      background-color: #ffffff;
+    }
+
+    .email-body {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .logo img {
+      width: 120px;
+      height: auto;
+      display: block;
+    }
+
+    .title {
+      font-size: 26px;
+      line-height: 1.3;
+      font-weight: bold;
+      color: #1d1e20;
+      margin: 28px 0 10px;
+    }
+
+    .greeting {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #36344d;
+      margin: 0 0 20px;
+    }
+
+    /* .otp-box {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 22px 20px;
+      background-color: #ffffff;
+    } */
+
+    .otp-code {
+      font-size: 34px;
+      font-weight: bold;
+      color: #1B8BCC;
+      letter-spacing: 6px;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .message {
+      font-size: 14px;
+      color: #36344d;
+      margin: 22px 0 14px;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #6d7081;
+      margin: 0 0 22px;
+    }
+
+    .note strong {
+      color: #36344d;
+    }
+
+    .alert-box {
+      background-color: #f2f3f6;
+      border-radius: 12px;
+    }
+
+    .alert-text {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #36344d;
+      margin: 0;
+    }
+
+    .footer {
+      font-size: 12px;
+      color: #999999;
+      margin-top: 24px;
+    }
+
+    .footer a {
+      color: #1B8BCC;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div class="email-body">
+
+      <!-- Logo -->
+      <div class="logo">
+        <img src="https://asifzonebd.com/logo.png" alt="App Logo" />
       </div>
-      <!-- <div class="footer">
-        <p>
-          If you need further assistance, please
-          <a href="mailto:support.Forager@gmail.com">contact support</a>.
-        </p>
-      </div> -->
+
+      <!-- Heading -->
+      <h1 class="title">Reset your password</h1>
+      <p class="greeting">
+        Hello {{email}},<br />
+        We received a request to reset the password for your account. Your
+        One-Time Password (OTP) to reset your password is:
+      </p>
+
+      <!-- OTP -->
+      <div class="otp-box">
+        <p class="otp-code">{{otp}}</p>
+      </div>
+
+      <p class="message">
+        Please make sure you never share this code with anyone.
+      </p>
+
+      <p class="note">
+        <strong>Note:</strong> The code will expire in 10 minutes.
+      </p>
+
+      <!-- Alert box -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="alert-box" style="background-color:#f2f3f6;border-radius:12px;">
+        <tr>
+          <td width="40" valign="middle" style="padding:16px 0 16px 18px;font-size:22px;">&#127911;</td>
+          <td valign="middle" style="padding:16px 18px 16px 12px;">
+            <p class="alert-text">
+              <strong>Didn't request a password reset?</strong> Please ignore
+              this email. Your password will stay the same.
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Footer -->
+      <p class="footer">
+        Thank you for using our application.
+        <!--
+        <br />If you need further assistance, please
+        <a href="mailto:support.Forager@gmail.com">contact support</a>.
+        -->
+      </p>
+
     </div>
-  </body>
+  </div>
+</body>
 </html>
