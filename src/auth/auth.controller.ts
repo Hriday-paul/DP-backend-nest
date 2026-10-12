@@ -15,7 +15,7 @@ export class AuthController {
     async registerUser(@Body() body: CreateUserDto) {
         const user = await this.userService.addNewuser(body);
         const token = await this.otpService.resendOtp({ email: user?.email });
-        return { user, token : token?.token };
+        return { user, otpToken : token?.token };
     }
 
     @Post('login')
