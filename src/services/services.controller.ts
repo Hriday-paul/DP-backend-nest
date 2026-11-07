@@ -95,6 +95,14 @@ export class ServicesController {
     return await this.servicesService.getAllServices(filtered_query, options);
   }
 
+
+  @ResponseMessage('Services by category retrieved successfully')
+  @HttpCode(200)
+  @Get("by-category")
+  async getServicesByCategory() {
+    return await this.servicesService.getServicesByCategory();
+  }
+
   @ResponseMessage('Similar services retrieved successfully')
   @HttpCode(200)
   @Get('similar/:slug')

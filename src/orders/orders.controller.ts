@@ -16,7 +16,6 @@ import {
   PlaceOrderDto,
   QueryOrderDto,
   UpdateOrderStatusDto,
-  UpdatePaymentStatusDto,
 } from './orders.dto';
 import { Roles } from 'src/common/deorators/role.decorator';
 import { Role } from '@prisma/client';
@@ -61,21 +60,6 @@ export class OrdersController {
     const userId = req['user']?.id;
    
     return await this.ordersService.myorders(userId, filtered_query, options);
-  }
-
-  @Roles(Role.ADMIN)
-  @UseGuards(PermissionGuard)
-  @ResponseMessage('Payment status updated successfully')
-  @HttpCode(200)
-  @Patch(':id/payment-status')
-  async updatePaymentStatus(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updatePaymentStatusDto: UpdatePaymentStatusDto,
-  ) {
-    return await this.ordersService.updatePaymentStatus(
-      id,
-      updatePaymentStatusDto,
-    );
   }
 
   @Roles(Role.ADMIN, Role.MANAGER)

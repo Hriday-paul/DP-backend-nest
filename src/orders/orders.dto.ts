@@ -1,23 +1,39 @@
+
 import {
   IsEmail,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Min,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
-import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
+import { OrderStatus, PaymentMethod } from '@prisma/client';
+import { Type } from 'class-transformer';
 
-export class PlaceOrderDto {
+export class ItemDto {
+  @IsString()
   @IsNotEmpty({ message: 'Service ID is required' })
-  @IsUUID(undefined, { message: 'Service ID must be a valid UUID' })
   serviceId!: string;
 
-  @IsNotEmpty({ message: 'Variant ID is required' })
-  @IsUUID(undefined, { message: 'Variant ID must be a valid UUID' })
-  variantId!: string;
+  @IsString()
+  @IsNotEmpty({message : 'Variant ID is required'})
+  varientId!: string;
+
+  @IsInt()
+  @Min(1, { message: 'Quantity must be a positive integer' })
+  quantity!: number;
+}
+
+export class PlaceOrderDto {
+  @IsArray()
+  @ValidateNested({ each: true }) // Ensures every object in the array gets validated
+  @Type(() => ItemDto)            // Transforms plain objects into instances of ItemDto
+  services!: ItemDto[];
 
   @IsNotEmpty({ message: 'Customer name is required' })
   @IsString({ message: 'Customer name must be a string' })
@@ -63,10 +79,6 @@ export class QueryOrderDto {
   status?: OrderStatus;
 
   @IsOptional()
-  @IsEnum(PaymentStatus, { message: 'Invalid payment status' })
-  paymentStatus?: PaymentStatus;
-
-  @IsOptional()
   @IsUUID(undefined, { message: 'Service ID must be a valid UUID' })
   serviceId?: string;
 
@@ -87,12 +99,6 @@ export class QueryOrderDto {
   @IsOptional()
   @IsString({ message: 'Sort order must be a string' })
   sortOrder?: string;
-}
-
-export class UpdatePaymentStatusDto {
-  @IsNotEmpty({ message: 'Payment status is required' })
-  @IsEnum(PaymentStatus, { message: 'Invalid payment status' })
-  status!: PaymentStatus;
 }
 
 export class UpdateOrderStatusDto {

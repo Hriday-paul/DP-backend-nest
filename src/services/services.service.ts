@@ -166,6 +166,45 @@ export class ServicesService {
     };
   }
 
+  async getServicesByCategory() {
+
+    const data = await this.prismaService.category.findMany({
+      where: {
+        services: {
+          some: {}
+        }
+      },
+      include: {
+        services: {
+          include: {
+            images: {
+              select: {
+                id: true,
+                url: true,
+                key: true,
+              },
+            },
+            variants: {
+              where: { isDeleted: false },
+              select: {
+                id: true,
+                timeLine: true,
+                base_price: true,
+                discount: true,
+                final_price: true,
+                badges: true,
+                note: true,
+                accountType: true,
+              },
+            },
+          },
+        }
+      }
+    })
+
+    return data;
+  }
+
   async getServiceBySlug(slug: string) {
 
     const where: Prisma.SerivceWhereInput = {

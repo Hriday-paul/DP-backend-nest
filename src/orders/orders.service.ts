@@ -4,12 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { OrderStatus, PaymentStatus, Prisma, Role } from '@prisma/client';
+import { OrderStatus, Prisma, Role } from '@prisma/client';
 import {
   PlaceOrderDto,
   QueryOrderDto,
   UpdateOrderStatusDto,
-  UpdatePaymentStatusDto,
 } from './orders.dto';
 import { paginationHelper, TPaginationOptions } from 'src/common/helper/pagination.helper';
 
@@ -21,54 +20,76 @@ export class OrdersService {
     payload: PlaceOrderDto,
     currentUser: { id: string; role: Role },
   ) {
-    // 1. Verify service exists and is not deleted
-    const service = await this.prismaService.serivce.findFirst({
+
+    const services = await this.prismaService.serivce.findMany({
       where: {
-        id: payload.serviceId,
+        id: { in: payload.services.map((item) => item.serviceId) },
         isDeleted: false,
       },
+      include: {
+        variants: true
+      }
     });
 
-    if (!service) {
+
+    //check if all services exist
+    if (services.length !== payload.services.length) {
       throw new NotFoundException('Service not found');
     }
 
     // 2. Verify variant exists, is not deleted, and belongs to the service
-    const variant = await this.prismaService.variant.findFirst({
-      where: {
-        id: payload.variantId,
-        serviceId: payload.serviceId,
-        isDeleted: false,
-      },
+    const serviceVariantMap = new Map<string, Prisma.VariantGetPayload<{}>[]>();
+    services.forEach((service) => {
+      serviceVariantMap.set(service.id, service.variants);
     });
 
-    if (!variant) {
-      throw new BadRequestException(
-        'Selected variant does not exist or does not belong to this service',
-      );
+    for (const item of payload.services) {
+      const variants = serviceVariantMap.get(item.serviceId);
+      if (!variants) {
+        throw new NotFoundException(`Service with ID ${item.serviceId} not found`);
+      }
+
+      const variant = variants.find((v) => v.id === item.varientId);
+      if (!variant) {
+        throw new NotFoundException(`Variant with ID ${item.varientId} not found for service ${item.serviceId}`);
+      }
+
     }
 
-    const orderAmount = payload.amount ?? variant.final_price;
+    const orderAmount = payload.services.reduce((total, item) => {
+      const service = services.find((s) => s.id === item.serviceId);
+      const variant = service?.variants.find((v) => v.id === item.varientId);
+
+      if (!service || !variant) {
+        throw new NotFoundException(`Service or variant not found for service ID ${item.serviceId} and variant ID ${item.varientId}`);
+      }
+
+      return total + variant.final_price * item.quantity;
+    }, 0);
 
     // 3. Atomically create payment, order, and notification in transaction
     const newOrder = await this.prismaService.$transaction(async (tx) => {
-      const payment = await tx.payment.create({
-        data: {
-          amount: orderAmount,
-          paymentMethod: payload.paymentMethod,
-          accountNumber: payload.accountNumber.trim(),
-          transactionId: payload.transactionId.trim(),
-          userId: currentUser.id,
-          status: PaymentStatus.PENDING,
-        },
-      });
 
       const order = await tx.order.create({
         data: {
           userId: currentUser.id,
-          serviceId: payload.serviceId,
-          variantId: payload.variantId,
-          paymentId: payment.id,
+
+          paymentMethod: payload.paymentMethod,
+          accountNumber: payload.accountNumber.trim(),
+          transactionId: payload.transactionId.trim(),
+
+          price: orderAmount,
+          items: {
+            createMany: {
+              data: payload.services.map((item) => ({
+                serviceId: item.serviceId,
+                variantId: item.varientId,
+                quantity: item.quantity,
+                unitPrice: 0,
+                totalPrice: 0
+              }))
+            }
+          },
           customerName: payload.customerName.trim(),
           customerEmail: payload.customerEmail.trim(),
           customerWhatsapp: payload.customerWhatsapp.trim(),
@@ -76,22 +97,28 @@ export class OrdersService {
           status: OrderStatus.PENDING,
         },
         include: {
-          service: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-            },
-          },
-          variant: {
-            select: {
-              id: true,
-              timeLine: true,
-              final_price: true,
-              accountType: true,
-            },
-          },
-          payment: true,
+
+          items: {
+            include: {
+              service: {
+                select: {
+                  id: true,
+                  title: true,
+                  slug: true,
+                },
+              },
+
+              variant: {
+                select: {
+                  id: true,
+                  timeLine: true,
+                  final_price: true,
+                  accountType: true,
+                },
+              },
+            }
+          }
+
         },
       });
 
@@ -99,7 +126,7 @@ export class OrdersService {
         data: {
           receiverId: currentUser.id,
           title: 'Order Placed Successfully',
-          message: `Your order for ${service.title} (${variant.timeLine}) has been placed and is currently pending verification.`,
+          message: `Your order for has been placed and is currently pending verification.`,
         },
       });
 
@@ -120,10 +147,6 @@ export class OrdersService {
       andConditions.push({ status: query.status });
     }
 
-    if (query.paymentStatus) {
-      andConditions.push({ payment: { status: query.paymentStatus } });
-    }
-
     if (query.searchTerm) {
       const term = query.searchTerm.trim();
       andConditions.push({
@@ -131,9 +154,8 @@ export class OrdersService {
           { customerName: { contains: term, mode: 'insensitive' } },
           { customerEmail: { contains: term, mode: 'insensitive' } },
           { customerWhatsapp: { contains: term, mode: 'insensitive' } },
-          { service: { title: { contains: term, mode: 'insensitive' } } },
-          { payment: { transactionId: { contains: term, mode: 'insensitive' } } },
-          { payment: { accountNumber: { contains: term, mode: 'insensitive' } } },
+          // { service: { title: { contains: term, mode: 'insensitive' } } },
+          { accountNumber: { contains: term, mode: 'insensitive' } }
         ],
       });
     }
@@ -158,31 +180,36 @@ export class OrdersService {
               phone: true,
             },
           },
-          service: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-              images: {
+
+          items: {
+            include: {
+              service: {
                 select: {
-                  key: true,
-                  url: true,
-                  id: true
-                }
-              }
-            },
-          },
-          variant: {
-            select: {
-              id: true,
-              timeLine: true,
-              base_price: true,
-              discount: true,
-              final_price: true,
-              accountType: true,
-            },
-          },
-          payment: true,
+                  id: true,
+                  title: true,
+                  slug: true,
+                  images: {
+                    select: {
+                      key: true,
+                      url: true,
+                      id: true
+                    }
+                  }
+                },
+              },
+              variant: {
+                select: {
+                  id: true,
+                  timeLine: true,
+                  base_price: true,
+                  discount: true,
+                  final_price: true,
+                  accountType: true,
+                },
+              },
+            }
+          }
+
         },
       }),
       this.prismaService.order.count({
@@ -203,7 +230,7 @@ export class OrdersService {
   async myorders(userId: string, query: QueryOrderDto, options: TPaginationOptions) {
     const { limit, skip, sortBy, sortOrder, page } = paginationHelper.calculatePagination(options);
 
-    const { searchTerm, status, paymentStatus } = query;
+    const { searchTerm, status } = query;
 
     const andConditions: Prisma.OrderWhereInput[] = [
       { userId },
@@ -213,10 +240,6 @@ export class OrdersService {
       andConditions.push({ status: status });
     }
 
-    if (paymentStatus) {
-      andConditions.push({ payment: { status: paymentStatus } });
-    }
-
     if (searchTerm) {
       const term = searchTerm.trim();
       andConditions.push({
@@ -224,9 +247,8 @@ export class OrdersService {
           { customerName: { contains: term, mode: 'insensitive' } },
           { customerEmail: { contains: term, mode: 'insensitive' } },
           { customerWhatsapp: { contains: term, mode: 'insensitive' } },
-          { service: { title: { contains: term, mode: 'insensitive' } } },
-          { payment: { transactionId: { contains: term, mode: 'insensitive' } } },
-          { payment: { accountNumber: { contains: term, mode: 'insensitive' } } },
+          // { service: { title: { contains: term, mode: 'insensitive' } } },
+          { accountNumber: { contains: term, mode: 'insensitive' } }
         ],
       });
     }
@@ -251,31 +273,34 @@ export class OrdersService {
               phone: true,
             },
           },
-          service: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-              images: {
+          items: {
+            include: {
+              service: {
                 select: {
-                  key: true,
-                  url: true,
-                  id: true
-                }
-              }
-            },
-          },
-          variant: {
-            select: {
-              id: true,
-              timeLine: true,
-              base_price: true,
-              discount: true,
-              final_price: true,
-              accountType: true,
-            },
-          },
-          payment: true,
+                  id: true,
+                  title: true,
+                  slug: true,
+                  images: {
+                    select: {
+                      key: true,
+                      url: true,
+                      id: true
+                    }
+                  }
+                },
+              },
+              variant: {
+                select: {
+                  id: true,
+                  timeLine: true,
+                  base_price: true,
+                  discount: true,
+                  final_price: true,
+                  accountType: true,
+                },
+              },
+            }
+          }
         },
       }),
       this.prismaService.order.count({
@@ -292,41 +317,6 @@ export class OrdersService {
       data,
     };
 
-  }
-
-  async updatePaymentStatus(
-    orderId: string,
-    payload: UpdatePaymentStatusDto,
-  ) {
-    const order = await this.prismaService.order.findUnique({
-      where: { id: orderId },
-      include: { payment: true },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    const updatedPayment = await this.prismaService.payment.update({
-      where: { id: order.paymentId },
-      data: {
-        status: payload.status,
-        lastActionAt: new Date(),
-      },
-    });
-
-    await this.prismaService.notification.create({
-      data: {
-        receiverId: order.userId,
-        title: 'Payment Status Updated',
-        message: `The payment status for your order has been updated to ${payload.status}.`,
-      },
-    });
-
-    return {
-      ...order,
-      payment: updatedPayment,
-    };
   }
 
   async updateOrderStatus(
@@ -347,22 +337,7 @@ export class OrdersService {
         status: payload.status,
       },
       include: {
-        service: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            timeLine: true,
-            final_price: true,
-            accountType: true,
-          },
-        },
-        payment: true,
+
       },
     });
 

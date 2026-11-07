@@ -11,10 +11,12 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  app.enableCors({
-    origin: ["https://asifzonebd.com", "https://www.asifzonebd.com", "https://admin.asifzonebd.com", "https://www.admin.asifzonebd.com"],
-    credentials: true,
-  });
+  app.enableCors();
+
+  // app.enableCors({
+  //   origin: ["https://asifzonebd.com", "https://www.asifzonebd.com", "https://admin.asifzonebd.com", "https://www.admin.asifzonebd.com"],
+  //   credentials: true,
+  // });
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,

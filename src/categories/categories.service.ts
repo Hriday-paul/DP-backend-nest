@@ -11,18 +11,31 @@ import {
   QueryCategoryDto,
   UpdateCategoryDto,
 } from './categories.dto';
+import slugify from 'slugify';
 
 @Injectable()
 export class CategoriesService {
   constructor(private readonly prismaService: PrismaService) { }
 
+  generateSlug(text: string) {
+    return slugify(text, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  };
+
   async createCategory(payload: CreateCategoryDto) {
     const name = payload.name.trim();
+
+    // 3. Generate or validate slug
+    const key = this.generateSlug(payload?.name);
 
     //check the category is already exist or not
     const isExist = await this.prismaService.category.findFirst({
       where: {
         name: { equals: name, mode: 'insensitive' },
+        key,
         isDeleted: false,
       },
     });
@@ -34,6 +47,7 @@ export class CategoriesService {
     await this.prismaService.category.create({
       data: {
         name,
+        key,
         description: payload.description?.trim(),
       }
     });
