@@ -393,17 +393,22 @@ export class ServicesService {
         await tx.serivce.delete({
           where: { id }
         });
+        await tx.variant.deleteMany({
+          where: { isDeleted: false, serviceId: id }
+        });
       } else {
         await tx.serivce.update({
           where: { id },
           data: { isDeleted: true },
         });
+
+        await tx.variant.updateMany({
+          where: { isDeleted: false, serviceId: id },
+          data: { isDeleted: true },
+        });
       }
 
-      await tx.variant.updateMany({
-        where: { isDeleted: false, serviceId: id },
-        data: { isDeleted: true },
-      });
+
     })
 
     //delete the service, if no items exist

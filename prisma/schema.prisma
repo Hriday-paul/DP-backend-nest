@@ -135,7 +135,7 @@ model Variant {
   isDeleted Boolean @default(false)
 
   serviceId String
-  service   Serivce  @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  service   Serivce  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   accountType AccountType @default(PERSONAL)
 
