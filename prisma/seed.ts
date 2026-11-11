@@ -4,7 +4,7 @@ const prisma = new PrismaService();
 
 async function main() {
 
-    await prisma.orderItem.deleteMany();
+    // await prisma.orderItem.deleteMany();
 
 }
 
