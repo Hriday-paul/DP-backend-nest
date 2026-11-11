@@ -12,18 +12,23 @@ import {
 } from './services.dto';
 import { paginationHelper, TPaginationOptions } from 'src/common/helper/pagination.helper';
 import slugify from 'slugify';
+import path from 'path';
+import fs from 'fs-extra';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class ServicesService {
   constructor(private readonly prismaService: PrismaService) { }
 
   generateSlug(text: string) {
-    return slugify(text, {
+    const slug = slugify(text, {
       lower: true,
       strict: true,
       trim: true,
     });
-  };
+
+    return `${slug}-${randomUUID().slice(0, 8)}`;
+  }
 
   async createService(payload: CreateServiceDto) {
 
@@ -181,8 +186,8 @@ export class ServicesService {
       },
       include: {
         services: {
-          where : {
-            isDeleted : false
+          where: {
+            isDeleted: false
           },
           include: {
             images: {
@@ -374,16 +379,40 @@ export class ServicesService {
       throw new NotFoundException('Service not found');
     }
 
-    await this.prismaService.$transaction([
-      this.prismaService.serivce.update({
-        where: { id },
-        data: { isDeleted: true },
-      }),
-      this.prismaService.variant.updateMany({
+    //check have order on the servcie
+    const items = await this.prismaService.orderItem.findMany({
+      where: {
+        serviceId: service?.id
+      }
+    });
+
+    await this.prismaService.$transaction(async tx => {
+
+      //delete the service, if no items exist
+      if (items.length === 0) {
+        tx.serivce.delete({
+          where: { id }
+        });
+      } else {
+        tx.serivce.update({
+          where: { id },
+          data: { isDeleted: true },
+        });
+      }
+
+      tx.variant.updateMany({
         where: { isDeleted: false, serviceId: id },
         data: { isDeleted: true },
-      }),
-    ]);
+      });
+    })
+
+    //delete the service, if no items exist
+    // if (items.length === 0) {
+    //   for (let item of items) {
+    //     const IMAGE_DIR = 
+    //     await fs.remove(path.join(IMAGE_DIR, path.basename(banner.key))).catch(() => { });
+    //   }
+    // }
 
     return;
   }
