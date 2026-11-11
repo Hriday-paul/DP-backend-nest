@@ -181,6 +181,9 @@ export class ServicesService {
       },
       include: {
         services: {
+          where : {
+            isDeleted : false
+          },
           include: {
             images: {
               select: {
