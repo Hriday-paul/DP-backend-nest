@@ -386,30 +386,23 @@ export class ServicesService {
       }
     });
 
-    await this.prismaService.$transaction(async tx => {
-
-      //delete the service, if no items exist
+    await this.prismaService.$transaction(async (tx) => {
       if (items.length === 0) {
-        await tx.serivce.delete({
-          where: { id }
-        });
-        await tx.variant.deleteMany({
-          where: { isDeleted: false, serviceId: id }
-        });
+        // delete children first (all variants, including soft-deleted ones)
+        await tx.variant.deleteMany({ where: { serviceId: id } });
+        await tx.serviceImage.deleteMany({ where: { serviceId: id } });
+        await tx.serivce.delete({ where: { id } });
       } else {
         await tx.serivce.update({
           where: { id },
           data: { isDeleted: true },
         });
-
         await tx.variant.updateMany({
-          where: { isDeleted: false, serviceId: id },
+          where: { serviceId: id, isDeleted: false },
           data: { isDeleted: true },
         });
       }
-
-
-    })
+    });
 
     //delete the service, if no items exist
     // if (items.length === 0) {
