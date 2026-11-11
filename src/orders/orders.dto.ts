@@ -62,11 +62,6 @@ export class PlaceOrderDto {
   @IsNotEmpty({ message: 'Transaction ID is required' })
   @IsString({ message: 'Transaction ID must be a string' })
   transactionId!: string;
-
-  @IsOptional()
-  @IsNumber({}, { message: 'Amount must be a number' })
-  @Min(0, { message: 'Amount cannot be negative' })
-  amount?: number;
 }
 
 export class QueryOrderDto {

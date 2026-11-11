@@ -106,6 +106,11 @@ export class ServicesService {
         OR: [
           { title: { contains: searchTerm as string, mode: 'insensitive' } },
           { description: { contains: searchTerm as string, mode: 'insensitive' } },
+          {
+            category: {
+              name: { contains: searchTerm as string, mode: 'insensitive' },
+            }
+          }
         ],
       });
     }

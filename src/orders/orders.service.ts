@@ -37,35 +37,27 @@ export class OrdersService {
       throw new NotFoundException('Service not found');
     }
 
-    // 2. Verify variant exists, is not deleted, and belongs to the service
-    const serviceVariantMap = new Map<string, Prisma.VariantGetPayload<{}>[]>();
-    services.forEach((service) => {
-      serviceVariantMap.set(service.id, service.variants);
-    });
-
-    for (const item of payload.services) {
-      const variants = serviceVariantMap.get(item.serviceId);
-      if (!variants) {
-        throw new NotFoundException(`Service with ID ${item.serviceId} not found`);
-      }
-
-      const variant = variants.find((v) => v.id === item.varientId);
-      if (!variant) {
-        throw new NotFoundException(`Variant with ID ${item.varientId} not found for service ${item.serviceId}`);
-      }
-
-    }
-
-    const orderAmount = payload.services.reduce((total, item) => {
+    const items = payload.services.map((item) => {
       const service = services.find((s) => s.id === item.serviceId);
       const variant = service?.variants.find((v) => v.id === item.varientId);
 
       if (!service || !variant) {
-        throw new NotFoundException(`Service or variant not found for service ID ${item.serviceId} and variant ID ${item.varientId}`);
+        throw new NotFoundException(`Service or variant unavailable. Please, contact support.`);
       }
 
-      return total + variant.final_price * item.quantity;
-    }, 0);
+      return {
+        serviceId: item.serviceId,
+        variantId: item.varientId,
+        quantity: item.quantity,
+        unitPrice: variant.final_price,
+        totalPrice: variant.final_price * item.quantity,
+      };
+    });
+
+    const orderAmount = items.reduce(
+      (total, item) => total + item.totalPrice,
+      0
+    );
 
     // 3. Atomically create payment, order, and notification in transaction
     const newOrder = await this.prismaService.$transaction(async (tx) => {
@@ -81,12 +73,12 @@ export class OrdersService {
           price: orderAmount,
           items: {
             createMany: {
-              data: payload.services.map((item) => ({
+              data: items.map((item) => ({
                 serviceId: item.serviceId,
-                variantId: item.varientId,
+                variantId: item.variantId,
                 quantity: item.quantity,
-                unitPrice: 0,
-                totalPrice: 0
+                unitPrice: item?.unitPrice,
+                totalPrice: item?.totalPrice
               }))
             }
           },

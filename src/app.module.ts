@@ -12,10 +12,11 @@ import { NotificationModule } from './notification/notification.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ServicesModule } from './services/services.module';
 import { OrdersModule } from './orders/orders.module';
+import { BannersModule } from './banners/banners.module';
 
 
 @Module({
-  imports: [UserModule, AuthModule, ConfigModule.forRoot(), DashboardModule, NotificationModule, CategoriesModule, ServicesModule, OrdersModule],
+  imports: [UserModule, AuthModule, ConfigModule.forRoot(), DashboardModule, NotificationModule, CategoriesModule, ServicesModule, OrdersModule, BannersModule],
   controllers: [AppController],
   providers: [AppService],
 })
@@ -29,6 +30,7 @@ export class AppModule implements NestModule {
         { path: 'categories/:id', method: RequestMethod.GET },
         { path: 'services', method: RequestMethod.GET },
         { path: 'services/:id', method: RequestMethod.GET },
+        { path: 'banners', method: RequestMethod.GET },
       )
       .forRoutes(
         "users",
@@ -38,6 +40,7 @@ export class AppModule implements NestModule {
         "categories",
         "services",
         "orders",
+        "banners",
       )
   }
 }

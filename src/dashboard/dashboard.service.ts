@@ -19,18 +19,18 @@ export class DashboardService {
             }
         });
 
-        const totalEarnings = await this.prismaService.payment.aggregate({
+        const totalEarnings = await this.prismaService.order.aggregate({
             _sum: {
-                amount: true
+                price: true
             },
             where: {
-                status: "PAID"
+                status: "COMPLETED"
             }
         });
 
         return {
             totalUsers,
-            totalEarnings: totalEarnings._sum.amount || 0
+            totalEarnings: totalEarnings._sum.price || 0
         };
     }
 
@@ -40,17 +40,17 @@ export class DashboardService {
         if (JoinYear) {
             year = Number(JoinYear);
         }
-        const result = await this.prismaService.payment.groupBy({
+        const result = await this.prismaService.order.groupBy({
             by: ["createdAt"],
             where: {
                 createdAt: {
                     gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
                     lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
                 },
-                status: "PAID"
+                status: "COMPLETED"
             },
             _sum: {
-                amount: true,
+                price: true,
             },
         });
 
@@ -79,7 +79,7 @@ export class DashboardService {
         // Populate monthly revenue array
         result.forEach((entry) => {
             const monthIndex = new Date(entry.createdAt).getMonth(); // Extract month index
-            const revenue = entry._sum.amount || 0; // Get the revenue for the month
+            const revenue = entry._sum.price || 0; // Get the revenue for the month
             monthsPaymentCount[monthIndex].revenue += revenue;
         });
 
