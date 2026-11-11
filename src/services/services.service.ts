@@ -390,17 +390,17 @@ export class ServicesService {
 
       //delete the service, if no items exist
       if (items.length === 0) {
-        tx.serivce.delete({
+        await tx.serivce.delete({
           where: { id }
         });
       } else {
-        tx.serivce.update({
+        await tx.serivce.update({
           where: { id },
           data: { isDeleted: true },
         });
       }
 
-      tx.variant.updateMany({
+      await tx.variant.updateMany({
         where: { isDeleted: false, serviceId: id },
         data: { isDeleted: true },
       });
