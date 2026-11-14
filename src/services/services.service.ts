@@ -16,6 +16,8 @@ import path from 'path';
 import fs from 'fs-extra';
 import { randomUUID } from 'crypto';
 
+const IMAGE_DIR = path.join(process.cwd(), 'public', 'images');
+
 @Injectable()
 export class ServicesService {
   constructor(private readonly prismaService: PrismaService) { }
@@ -468,6 +470,68 @@ export class ServicesService {
     });
 
     return similarServices;
+  }
+
+  async deleteServiceImage(imageId: string) {
+    const image = await this.prismaService.serviceImage.findUnique({
+      where: { id: imageId },
+    });
+
+    if (!image) {
+      throw new NotFoundException('Service image not found');
+    }
+
+    await this.prismaService.serviceImage.delete({ where: { id: imageId } });
+
+    // remove the physical file (ignore if already missing)
+    await fs
+      .remove(path.join(IMAGE_DIR, path.basename(image.key)))
+      .catch(() => { });
+
+    return;
+  }
+
+  async deleteVariant(variantId: string) {
+    const variant = await this.prismaService.variant.findFirst({
+      where: { id: variantId, isDeleted: false },
+    });
+
+    if (!variant) {
+      throw new NotFoundException('Variant not found');
+    }
+
+    // keep order history intact: soft delete if the variant was ever ordered
+    const orderedCount = await this.prismaService.orderItem.count({
+      where: { variantId },
+    });
+
+    await this.prismaService.$transaction(async (tx) => {
+      if (orderedCount > 0) {
+        await tx.variant.update({
+          where: { id: variantId },
+          data: { isDeleted: true },
+        });
+      } else {
+        await tx.variant.delete({ where: { id: variantId } });
+      }
+
+      // recalculate the service price range from the remaining active variants
+      const priceRange = await tx.variant.aggregate({
+        where: { serviceId: variant.serviceId, isDeleted: false },
+        _min: { final_price: true },
+        _max: { final_price: true },
+      });
+
+      await tx.serivce.update({
+        where: { id: variant.serviceId },
+        data: {
+          minPrice: priceRange._min.final_price ?? 0,
+          maxPrice: priceRange._max.final_price ?? 0,
+        },
+      });
+    });
+
+    return;
   }
 
 }

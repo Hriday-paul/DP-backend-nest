@@ -183,6 +183,24 @@ export class ServicesController {
 
   @Roles(Role.ADMIN)
   @UseGuards(PermissionGuard)
+  @ResponseMessage('Service image deleted successfully')
+  @HttpCode(200)
+  @Delete('images/:imageId')
+  async deleteServiceImage(@Param('imageId', ParseUUIDPipe) imageId: string) {
+    return await this.servicesService.deleteServiceImage(imageId);
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(PermissionGuard)
+  @ResponseMessage('Variant deleted successfully')
+  @HttpCode(200)
+  @Delete('variants/:variantId')
+  async deleteVariant(@Param('variantId', ParseUUIDPipe) variantId: string) {
+    return await this.servicesService.deleteVariant(variantId);
+  }
+
+  @Roles(Role.ADMIN)
+  @UseGuards(PermissionGuard)
   @ResponseMessage('Service deleted successfully')
   @HttpCode(200)
   @Delete(':id')
