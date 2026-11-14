@@ -69,7 +69,7 @@ export class ServicesController {
       }
     },
   }))
-  async uploadFile(@UploadedFiles() files: Express.Multer.File[], @Body() payload, @Req() req: Request) {
+  async uploadFile(@UploadedFiles() files: Express.Multer.File[], @Body() payload) {
 
     if (files) {
       payload.images = files.map(file => ({
@@ -122,13 +122,50 @@ export class ServicesController {
   @ResponseMessage('Service updated successfully')
   @HttpCode(200)
   @Patch(':id')
+  @UseInterceptors(FilesInterceptor('images', 5, {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const dir = TMP_DIR;
+        fs.ensureDirSync(dir);
+        cb(null, dir);
+      },
+      filename: (req, file, cb) => {
+        cb(null, `${`${Math.floor(100000 + Math.random() * 900000)}${Date.now()}`}-${file?.originalname}`);
+      },
+    }),
+    limits: {
+      fileSize: 1024 * 1024 * 5,  // 5MB
+      files: 5  // Maximum number of files
+    },
+    fileFilter: (_, file, cb) => {
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'), false);
+      }
+    },
+  }))
   async updateService(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateServiceDto: UpdateServiceDto,
-  ) {
-    //feature will be coming soon,
-    throw new NotFoundException('This feature will be coming soon');
-    // return await this.servicesService.updateService(id, updateServiceDto);
+    @UploadedFiles() files: Express.Multer.File[], @Body() payload) {
+
+      //new uploaded images
+    if (files) {
+      payload.images = files.map(file => ({
+        key: file.filename,
+        url: `${config.serverDomain}/images/${file.filename}`,
+      }));
+
+    }
+
+    //new varients, want to add
+    const variants = JSON.parse(payload?.variants || '[]');
+    payload.variants = variants;
+
+    await this.servicesService.updateService(id, payload);
+
     return;
   }
 

@@ -302,3 +302,14 @@ model Banner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Support {
+  id        String   @id @default(uuid())
+  name String
+  phone String
+  email String?
+  subject String
+  details String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
